@@ -165,7 +165,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace 
+namespace
 {
     public partial class MainWindow : Window
     {
@@ -178,11 +178,13 @@ namespace
         private const double CaptchaHeight = 220;
         private const double PuzzleSize = 60;
 
+        private int attemptsLeft = 3; // Количество попыток для прохождения
+
         public MainWindow()
         {
             InitializeComponent();
-            // Важно: инициализируем капчу ТОЛЬКО после полной загрузки окна,
-            // когда элементы гарантированно построили свои размеры в интерфейсе
+
+            // Инициализируем капчу ТОЛЬКО после полной загрузки окна
             this.Loaded += MainWindow_Loaded;
         }
 
@@ -195,14 +197,13 @@ namespace
         {
             try
             {
-                var mainImage = LoadSampleImage();
+                // Теперь загружается картинка с 3 новыми фигурами
+                var mainImage = CreateSampleImage();
                 MainImage.Source = mainImage;
 
                 CreatePuzzlePiece(mainImage);
 
                 PuzzleSlider.Value = 0;
-                captchaStatusTextBlock.Text = "Передвиньте пазл на нужное место.";
-                captchaStatusTextBlock.Foreground = Brushes.Black;
 
                 // Включаем элементы управления обратно при новой генерации
                 PuzzleSlider.IsEnabled = true;
@@ -214,9 +215,8 @@ namespace
             }
         }
 
-        private BitmapImage LoadSampleImage()
+        private BitmapImage CreateSampleImage()
         {
-            // Размеры генерируемого изображения теперь строго 350x220
             int width = (int)CaptchaWidth;
             int height = (int)CaptchaHeight;
 
@@ -225,16 +225,54 @@ namespace
 
             using (var drawingContext = drawingVisual.RenderOpen())
             {
-                drawingContext.DrawRectangle(Brushes.LightBlue, null, new Rect(0, 0, width, height));
-                drawingContext.DrawEllipse(Brushes.Red, null, new Point(width * 0.3, height * 0.4), 30, 30);
-                drawingContext.DrawRectangle(Brushes.Green, null, new Rect(width * 0.6, height * 0.3, 60, 40));
-                drawingContext.DrawLine(new Pen(Brushes.Blue, 3),
-                    new Point(width * 0.2, height * 0.7),
-                    new Point(width * 0.8, height * 0.7));
+                // 1. Рисуем красивый светлый фон
+                drawingContext.DrawRectangle(new SolidColorBrush(Color.FromRgb(240, 248, 255)), null, new Rect(0, 0, width, height));
+
+                // ==========================================
+                // ФИГУРА 1: КРУГ (Красный)
+                // ==========================================
+                var circleCenter = new Point(width * 0.25, height * 0.4); // Левая часть экрана
+                drawingContext.DrawEllipse(Brushes.Crimson, null, circleCenter, 35, 35);
+
+                // ==========================================
+                // ФИГУРА 2: ТРЕУГОЛЬНИК (Синий)
+                // ==========================================
+                var triangleGeometry = new StreamGeometry();
+                using (var ctx = triangleGeometry.Open())
+                {
+                    // Задаем вершины треугольника (Центральная верхняя часть экрана)
+                    ctx.BeginFigure(new Point(width * 0.5, height * 0.2), true /* заполнено */, true /* замкнуто */);
+                    ctx.LineTo(new Point(width * 0.4, height * 0.6), true, false);
+                    ctx.LineTo(new Point(width * 0.6, height * 0.6), true, false);
+                }
+                triangleGeometry.Freeze();
+                drawingContext.DrawGeometry(Brushes.RoyalBlue, null, triangleGeometry);
+
+                // ==========================================
+                // ФИГУРА 3: ШЕСТИУГОЛЬНИК (Зеленый)
+                // ==========================================
+                var hexagonGeometry = new StreamGeometry();
+                double hexCenterX = width * 0.75; // Правая часть экрана
+                double hexCenterY = height * 0.4;
+                double radius = 40; // Размер шестиугольника
+
+                using (var ctx = hexagonGeometry.Open())
+                {
+                    // Вычисляем 6 точек по окружности (шаг 60 градусов)
+                    ctx.BeginFigure(new Point(hexCenterX + radius, hexCenterY), true, true);
+                    for (int i = 1; i < 6; i++)
+                    {
+                        double angle = i * Math.PI / 3;
+                        ctx.LineTo(new Point(hexCenterX + radius * Math.Cos(angle), hexCenterY + radius * Math.Sin(angle)), true, false);
+                    }
+                }
+                hexagonGeometry.Freeze();
+                drawingContext.DrawGeometry(Brushes.ForestGreen, null, hexagonGeometry);
             }
 
             renderTarget.Render(drawingVisual);
 
+            // Конвертируем в BitmapImage для корректного отображения и вырезания
             var bitmap = new BitmapImage();
             var encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(renderTarget));
@@ -264,7 +302,7 @@ namespace
             // Цель генерируем так, чтобы она не вылезала за границы
             targetPosition = random.Next((int)(PuzzleSize + 50), (int)maxX);
 
-            // ВАЖНО: Вырезаем строго там же, где будет рамка (координата targetPosition)
+            // Вырезаем строго там же, где будет рамка (координата targetPosition)
             var puzzleBitmap = new CroppedBitmap(mainImage,
                 new Int32Rect((int)targetPosition, (int)startY, (int)PuzzleSize, (int)PuzzleSize));
 
@@ -315,19 +353,20 @@ namespace
             double minX = 20;
             double maxX = CaptchaWidth - PuzzlePiece.Width - 20;
 
-            // Плавно двигаем пазл в зависимости от положения слайдера (от 0 до 100)
+            // Плавно двигаем пазл в зависимости от положения слайдера
             double newX = minX + (PuzzleSlider.Value / 100.0) * (maxX - minX);
             puzzleTransform.X = newX;
         }
 
+        // Единственный и правильный метод обработки клика
         private void VerifyButton_Click(object sender, RoutedEventArgs e)
         {
             double currentPosition = puzzleTransform.X;
 
-            // Проверяем, попал ли пользователь в область с учетом погрешности tolerance
             if (Math.Abs(currentPosition - targetPosition) <= tolerance)
             {
-                captchaStatusTextBlock.Text = "✓ Капча пройдена успешно!";
+                // УСПЕХ
+                captchaStatusTextBlock.Text = "✓ Капча пройдена успешно! Доступ разрешен.";
                 captchaStatusTextBlock.Foreground = Brushes.Green;
 
                 PuzzleSlider.IsEnabled = false;
@@ -335,21 +374,25 @@ namespace
             }
             else
             {
-                captchaStatusTextBlock.Text = "✗ Неверно. Попробуйте еще раз.";
-                captchaStatusTextBlock.Foreground = Brushes.Red;
+                // ОШИБКА
+                attemptsLeft--;
 
-                // Автоматический сброс для новой попытки
-                InitializeCaptcha();
-            }
-        }
+                if (attemptsLeft > 0)
+                {
+                    captchaStatusTextBlock.Text = $"Неверно! Осталось попыток: {attemptsLeft}. Капча обновлена.";
+                    captchaStatusTextBlock.Foreground = Brushes.Red;
 
-        protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
-        {
-            base.OnRenderSizeChanged(sizeInfo);
-            // Метод оставлен, но теперь он не сломает логику, так как размеры фиксированы константами
-            if (IsLoaded)
-            {
-                InitializeCaptcha();
+                    InitializeCaptcha();
+                }
+                else
+                {
+                    // ПОПЫТКИ ЗАКОНЧИЛИСЬ
+                    captchaStatusTextBlock.Text = "Доступ заблокирован! Слишком много неудачных попыток.\nЧтобы повторить, откройте приложение заново.";
+                    captchaStatusTextBlock.Foreground = Brushes.Red;
+
+                    PuzzleSlider.IsEnabled = false;
+                    VerifyButton.IsEnabled = false;
+                }
             }
         }
     }
