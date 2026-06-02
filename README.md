@@ -477,6 +477,50 @@ namespace
 ```
 
 ### Пример работы с БД в коде
+#### создание таблицы xaml
+```
+<DataGrid x:Name="usersDB"
+          AutoGenerateColumns="False"
+          CanUserAddRows="False">
+
+    <DataGrid.Columns>
+
+        <DataGridTextColumn Header="ID"
+                            Binding="{Binding id}"
+                            Width="70"/>
+
+        <DataGridTextColumn Header="Роль"
+                            Binding="{Binding role_name}"
+                            Width="150"/>
+
+        <DataGridTextColumn Header="Логин"
+                            Binding="{Binding login}"
+                            Width="150"/>
+
+        <DataGridTextColumn Header="ФИО"
+                            Binding="{Binding full_name}"
+                            Width="250"/>
+
+        <DataGridTextColumn Header="Email"
+                            Binding="{Binding email}"
+                            Width="200"/>
+
+        <DataGridTextColumn Header="Телефон"
+                            Binding="{Binding phone}"
+                            Width="150"/>
+
+        <DataGridTextColumn Header="Статус"
+                            Binding="{Binding is_active}"
+                            Width="120"/>
+
+        <DataGridTextColumn Header="Дата создания"
+                            Binding="{Binding created_at}"
+                            Width="180"/>
+
+    </DataGrid.Columns>
+
+</DataGrid>
+```
 #### заполнение созданной таблицы
 ```
         private void loadUsersData()
