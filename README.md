@@ -507,6 +507,17 @@ namespace
             }
         }
 ```
+### пример получения выюранной строки
+```
+private void userEditingBTN_Click(object sender, RoutedEventArgs e)
+        {
+            if (usersDB.SelectedItem == null)
+            {
+                сообщение об ошибке так как ничего не выбрал
+                return;
+            }
+```
+
 #### пример авторизации
 ```
 private void Login_Click(object sender, RoutedEventArgs e)
