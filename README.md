@@ -476,3 +476,85 @@ namespace
 }
 ```
 
+### Пример работы с БД в коде
+#### заполнение созданной таблицы
+```
+        private void loadUsersData()
+        {
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+
+                string getUsersDataQ = @"SELECT 
+                                    u.id, 
+                                    r.name AS role_name,
+                                    u.login, 
+                                    u.full_name, 
+                                    u.email, 
+                                    u.phone, 
+                                    CASE 
+                                        WHEN u.is_active = 1 THEN 'Активен' 
+                                        ELSE 'Не активен' 
+                                    END AS is_active, 
+                                    u.created_at 
+                                FROM users u
+                                INNER JOIN roles r ON u.role_id = r.id;";
+
+                SqlDataAdapter adapter = new SqlDataAdapter(getUsersDataQ, conn);
+                DataTable table = new DataTable();
+                adapter.Fill(table);
+                usersDB.ItemsSource = table.DefaultView;
+            }
+        }
+```
+#### пример авторизации
+```
+private void Login_Click(object sender, RoutedEventArgs e)
+        {
+            string login = LoginBox1.Text;
+            string password = Password.Password;
+
+			using(SqlConnection conn = new SqlConnection(connectionString))
+            {
+
+                conn.Open();
+
+                string getLoginQ = @"SELECT Login, Password, Role 
+                                    FROM users
+                                    where Login = @login";
+                SqlCommand cmd = new SqlCommand(getLoginQ, conn);
+                cmd.Parameters.AddWithValue("@login", login);
+                SqlDataReader reader = cmd.ExecuteReader();
+
+                if (!reader.Read())
+                {
+                    ShowError("Пользователь не найден");
+                    return;
+                }
+                else
+                {
+                    string Login = reader["Login"].ToString();
+                    string Password = reader["Password"].ToString();
+                    string Role = reader["Role"].ToString();
+                    if (Password != password)
+                    {
+                        ShowError("Пароль неверный");
+                        return;
+                    }
+                    else
+                    {
+                        switch (Role)
+                        {
+                            case "Администратор":
+                                adminWorkSpace adminWorkSpace = new adminWorkSpace(Login, Password, Role, connectionString);
+                                adminWorkSpace.Show();
+                                this.Close();
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+            }
+		}
+```
