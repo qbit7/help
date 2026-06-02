@@ -516,6 +516,10 @@ private void userEditingBTN_Click(object sender, RoutedEventArgs e)
                 сообщение об ошибке так как ничего не выбрал
                 return;
             }
+			считывание и запись
+			DataRowView row = (DataRowView)usersDB.SelectedItem;
+            int selectedUserIdFromDBGrid = Convert.ToInt32(row["id"]);
+            string selectedUserLoginFromDBGrid = row["login"]?.ToString() ?? "";
 ```
 
 #### пример авторизации
