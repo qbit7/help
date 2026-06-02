@@ -1,0 +1,151 @@
+﻿<Window x:Class="projectName.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:projectName"
+        mc:Ignorable="d"
+        
+        Title="Авторизация"
+        WindowStartupLocation="CenterScreen"
+        Height="1080" Width="1920"
+        MinHeight="700" MinWidth="500"
+        Loaded="MainWindow_Loaded">
+    <!-- Основной контейнер окна.
+     Используется для размещения всех элементов интерфейса. -->
+    <Grid>
+        <!-- Контейнер для центрирования содержимого по вертикали и горизонтали. -->
+        <StackPanel VerticalAlignment="Center"
+                HorizontalAlignment="Center">
+            <!-- Блок каптчи.
+             Изначально скрыт и отображается только после нескольких
+             неудачных попыток авторизации. -->
+            <Grid x:Name="captchaGrid"
+              Visibility="Collapsed">
+                <StackPanel>
+                    <!-- Информационная часть каптчи.
+                     Содержит инструкции для пользователя. -->
+                    <StackPanel Margin="0,0,0,70">
+                        <TextBlock Text="Для авторизации вам необходимо пройти каптчу"
+                               FontSize="20"
+                               Margin="0,0,0,2"
+                               HorizontalAlignment="Center"/>
+                        <TextBlock Text="Вам необходимо правильно собрать пазл"
+                               FontSize="16"
+                               Margin="0,0,0,20"
+                               HorizontalAlignment="Center"
+                               Foreground="Gray"/>
+                        <!-- Область с фрагментами изображения.
+                         Пользователь перетаскивает данные элементы
+                         в игровое поле для сборки пазла. -->
+                        <StackPanel Orientation="Horizontal"
+                                HorizontalAlignment="Center">
+                            <Border x:Name="SourceBlock0"
+                                Width="100"
+                                Height="100"
+                                BorderBrush="Black"
+                                BorderThickness="2"
+                                Background="White"/>
+                            <Border x:Name="SourceBlock1"
+                                Width="100"
+                                Height="100"
+                                Margin="20,0,0,0"
+                                BorderBrush="Black"
+                                BorderThickness="2"
+                                Background="White"/>
+                            <Border x:Name="SourceBlock2"
+                                Width="100"
+                                Height="100"
+                                Margin="20,0,0,0"
+                                BorderBrush="Black"
+                                BorderThickness="2"
+                                Background="White"/>
+                            <Border x:Name="SourceBlock3"
+                                Width="100"
+                                Height="100"
+                                Margin="20,0,0,0"
+                                BorderBrush="Black"
+                                BorderThickness="2"
+                                Background="White"/>
+
+                        </StackPanel>
+                    </StackPanel>
+                    <!-- Игровое поле размером 2x2.
+                     Сюда пользователь должен разместить части пазла
+                     в правильном порядке. -->
+                    <StackPanel HorizontalAlignment="Center">
+                        <Border Width="320"
+                            Height="320"
+                            BorderBrush="Black"
+                            BorderThickness="2"
+                            Background="Transparent">
+                            <UniformGrid Rows="2"
+                                     Columns="2"
+                                     x:Name="TargetGrid">
+                                <!-- Ячейки для размещения частей пазла.
+                                 Свойство Tag хранит индекс позиции. -->
+                                <Border BorderBrush="#FF727272" BorderThickness="1" Tag="0"/>
+                                <Border BorderBrush="#FF727272" BorderThickness="1" Tag="1"/>
+                                <Border BorderBrush="#FF727272" BorderThickness="1" Tag="2"/>
+                                <Border BorderBrush="#FF727272" BorderThickness="1" Tag="3"/>
+                            </UniformGrid>
+                        </Border>
+                    </StackPanel>
+                    <!-- Кнопка запуска проверки правильности сборки пазла. -->
+                    <Button x:Name="VerifyButton"
+                        Content="Проверить"
+                        Width="150"
+                        Height="35"
+                        Margin="0,20,0,0"
+                        Click="VerifyButton_Click"/>
+                    <!-- Текстовое поле для отображения количества оставшихся попыток. -->
+                    <TextBlock x:Name="StatusTextBlock"
+                           Text="Осталось попыток: 3"
+                           Margin="0,10,0,0"
+                           HorizontalAlignment="Center"
+                           FontSize="14"
+                           FontWeight="SemiBold"/>
+                </StackPanel>
+            </Grid>
+            <!-- Блок авторизации.
+             Отображается пользователю при запуске приложения. -->
+            <Grid x:Name="authorizationGrid"
+              Visibility="Visible">
+                <StackPanel>
+                    <!-- Заголовок формы авторизации. -->
+                    <TextBlock Text="Авторизация"
+                           FontSize="24"
+                           Margin="0,0,0,2"
+                           HorizontalAlignment="Center"/>
+                    <!-- Краткая инструкция для пользователя. -->
+                    <TextBlock Text="Вам необходимо ввести логин и пароль"
+                           FontSize="15"
+                           Margin="0,0,0,100"
+                           HorizontalAlignment="Center"
+                           Foreground="Gray"/>
+                    <!-- Поле ввода логина пользователя. -->
+                    <TextBlock Text="Логин"
+                           FontSize="15"
+                           HorizontalAlignment="Left"
+                           Foreground="Gray"/>
+
+                    <TextBox x:Name="loginTextBox"
+                         HorizontalAlignment="Stretch"
+                         Margin="0,0,0,50"/>
+                    <!-- Поле ввода пароля пользователя. -->
+                    <TextBlock Text="Пароль"
+                           FontSize="15"
+                           HorizontalAlignment="Left"
+                           Foreground="Gray"/>
+                    <PasswordBox x:Name="passwordBox"
+                             HorizontalAlignment="Stretch"
+                             Margin="0,0,0,45"/>
+                    <!-- Кнопка отправки данных для выполнения авторизации. -->
+                    <Button Content="Войти"
+                        Padding="15,3"
+                        Click="loginBTN_Click"/>
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+    </Grid>
+</Window>
