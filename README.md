@@ -18,6 +18,7 @@ System.Configuration.ConfigurationManager
 ```
 readonly string connectionString = ConfigurationManager.ConnectionStrings["test_DB"].ConnectionString;
 ```
+
 #### стили
 ##### общие
 ```
@@ -96,8 +97,19 @@ readonly string connectionString = ConfigurationManager.ConnectionStrings["test_
     </Setter>
 </Style>
 ```
+
 ### Создание каптчи
 #### Основа для неё
+```
+Title="Авторизация" 
+        WindowStartupLocation="CenterScreen"
+        WindowState="Maximized"
+        Height="1080" 
+        MinHeight="650"
+        Width="1920"
+        MinWidth="450"
+```
+
 ```
 <Grid x:Name="captchaGrid" Visibility="Visible">
             
@@ -139,8 +151,8 @@ readonly string connectionString = ConfigurationManager.ConnectionStrings["test_
                             ValueChanged="PuzzleSlider_ValueChanged"/>
                 </StackPanel>
 
-                    <Button x:Name="VerifyButton" Grid.Row="3" Content="Проверить" Margin="0,20,0,0"/>
-                    <TextBlock x:Name="captchaStatusTextBlock" Grid.Row="4" Text="У вас осталось столько попыток" Margin="0,20,0,0"/>
+                    <Button x:Name="VerifyButton" Grid.Row="3" Content="Проверить" Margin="0,20,0,0" Click="VerifyButton_Click_1"/>
+                    <TextBlock x:Name="captchaStatusTextBlock" Grid.Row="4" Foreground="Red" TextWrapping="Wrap" Margin="0,20,0,0"/>
                 </Grid>
             </StackPanel>
         </Grid>
