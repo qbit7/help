@@ -617,3 +617,266 @@ private void Login_Click(object sender, RoutedEventArgs e)
             }
 		}
 ```
+
+### Каптча с картинками 4шт
+красота
+```
+<Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Соберите картинку, перетащив кусочки на правильные места" 
+                   FontSize="18" FontWeight="Bold" Margin="0,0,0,20" HorizontalAlignment="Center"/>
+
+        <Canvas x:Name="MainCanvas" Grid.Row="1" Background="#F9F9F9" ClipToBounds="True">
+
+            <Canvas Canvas.Left="20" Canvas.Top="20" Width="320" Height="320">
+                <Rectangle Width="320" Height="320" Stroke="#B0B0B0" StrokeThickness="2" 
+                           StrokeDashArray="4 4" RadiusX="5" RadiusY="5"/>
+                <TextBlock Text="Перемешанные кусочки" Width="320" Height="320"
+                           VerticalAlignment="Center" HorizontalAlignment="Center" 
+                           TextAlignment="Center" LineHeight="320" Foreground="#888888"/>
+            </Canvas>
+
+            <Border Canvas.Left="420" Canvas.Top="20" Width="320" Height="320" 
+                    BorderBrush="Crimson" BorderThickness="2" CornerRadius="5" Background="White">
+                <UniformGrid Rows="2" Columns="2" x:Name="TargetGrid">
+                    <Border BorderBrush="#E0E0E0" BorderThickness="1" Tag="0"/>
+                    <Border BorderBrush="#E0E0E0" BorderThickness="1" Tag="1"/>
+                    <Border BorderBrush="#E0E0E0" BorderThickness="1" Tag="2"/>
+                    <Border BorderBrush="#E0E0E0" BorderThickness="1" Tag="3"/>
+                </UniformGrid>
+            </Border>
+        </Canvas>
+
+        <Button x:Name="VerifyButton" Grid.Row="2" Content="Проверить" 
+                Width="150" Height="35" Margin="0,15,0,0" FontSize="14" Click="VerifyButton_Click"/>
+
+        <TextBlock x:Name="StatusTextBlock" Grid.Row="3" Text="Осталось попыток: 3" 
+                   Margin="0,10,0,0" HorizontalAlignment="Center" FontSize="14" FontWeight="SemiBold"/>
+    </Grid>
+```
+
+лог
+```
+    public partial class MainWindow : Window
+    {
+        private readonly Random random = new Random();
+        private int attemptsLeft = 3;
+
+        // =========================================================================
+        // ЗАГРУЗКА ЧЕРЕЗ COMPONENT (PACK URI)
+        // Замени "moroz" ниже на точное название твоего проекта (Assembly Name),
+        // если оно отличается. Обычно оно совпадает с namespace.
+        // =========================================================================
+        private readonly string[] ImageResources = new string[]
+        {
+    "pic/1.png",
+    "pic/2.png",
+    "pic/3.png",
+    "pic/4.png"
+        };
+
+        
+
+        // Переменные для Drag & Drop
+        private Image draggingPiece = null;
+        private Point clickOffset;
+
+        // Список для хранения созданных элементов Image
+        private readonly List<Image> puzzlePieces = new List<Image>();
+
+        public MainWindow()
+        {
+            InitializeComponent();
+            this.Loaded += MainWindow_Loaded;
+        }
+
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            InitializeGame();
+        }
+
+        // Вместо старого массива с pack:// пишем просто относительные пути к ресурсам внутри проекта
+        private void InitializeGame()
+        {
+            // Очищаем холст от старых картинок при перезапуске
+            foreach (var piece in puzzlePieces)
+            {
+                MainCanvas.Children.Remove(piece);
+            }
+            puzzlePieces.Clear();
+
+            try
+            {
+                double partSize = 160;
+
+                // Автоматически получаем имя текущей сборки проекта, чтобы не прописывать его вручную
+                string assemblyName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
+
+                // Создаем 4 элемента Image из ресурсов
+                for (int i = 0; i < ImageResources.Length; i++)
+                {
+                    // Формируем правильный Pack URI на лету с реальным именем проекта
+                    string fullPackUri = $"pack://application:,,,/{assemblyName};component/{ImageResources[i]}";
+
+                    BitmapImage bmp = new BitmapImage();
+                    bmp.BeginInit();
+                    bmp.UriSource = new Uri(fullPackUri, UriKind.Absolute);
+                    bmp.CacheOption = BitmapCacheOption.OnLoad;
+                    bmp.EndInit();
+
+                    Image img = new Image
+                    {
+                        Source = bmp,
+                        Width = partSize,
+                        Height = partSize,
+                        Tag = i,
+                        Cursor = Cursors.Hand
+                    };
+
+                    // Подписываем на события мыши для перетаскивания
+                    img.MouseLeftButtonDown += Piece_MouseLeftButtonDown;
+                    img.MouseMove += Piece_MouseMove;
+                    img.MouseLeftButtonUp += Piece_MouseLeftButtonUp;
+
+                    puzzlePieces.Add(img);
+                    MainCanvas.Children.Add(img);
+                }
+
+                // Перемешиваем и раскидываем кусочки в ЛЕВОЙ зоне
+                foreach (var piece in puzzlePieces)
+                {
+                    double randX = random.Next(25, 175);
+                    double randY = random.Next(25, 175);
+
+                    Canvas.SetLeft(piece, randX);
+                    Canvas.SetTop(piece, randY);
+                    Panel.SetZIndex(piece, 10);
+                }
+
+                StatusTextBlock.Text = $"Осталось попыток: {attemptsLeft}";
+                StatusTextBlock.Foreground = Brushes.Black;
+                VerifyButton.IsEnabled = true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка загрузки ресурсов: {ex.Message}");
+            }
+        }
+
+        #region Логика перетаскивания мышью (Drag & Drop)
+
+        private void Piece_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            draggingPiece = sender as Image;
+            if (draggingPiece != null)
+            {
+                clickOffset = e.GetPosition(draggingPiece);
+                draggingPiece.CaptureMouse();
+                Panel.SetZIndex(draggingPiece, 999);
+            }
+        }
+
+        private void Piece_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (draggingPiece != null && draggingPiece.IsMouseCaptured)
+            {
+                Point currentMousePos = e.GetPosition(MainCanvas);
+
+                double newX = currentMousePos.X - clickOffset.X;
+                double newY = currentMousePos.Y - clickOffset.Y;
+
+                if (newX < 0) newX = 0;
+                if (newY < 0) newY = 0;
+                if (newX > MainCanvas.ActualWidth - draggingPiece.Width) newX = MainCanvas.ActualWidth - draggingPiece.Width;
+                if (newY > MainCanvas.ActualHeight - draggingPiece.Height) newY = MainCanvas.ActualHeight - draggingPiece.Height;
+
+                Canvas.SetLeft(draggingPiece, newX);
+                Canvas.SetTop(draggingPiece, newY);
+            }
+        }
+
+        private void Piece_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (draggingPiece != null)
+            {
+                draggingPiece.ReleaseMouseCapture();
+                Panel.SetZIndex(draggingPiece, 10);
+
+                Point pieceCenter = new Point(
+                    Canvas.GetLeft(draggingPiece) + draggingPiece.Width / 2,
+                    Canvas.GetTop(draggingPiece) + draggingPiece.Height / 2
+                );
+
+                foreach (Border zone in TargetGrid.Children)
+                {
+                    Point zonePos = zone.TranslatePoint(new Point(0, 0), MainCanvas);
+                    Rect zoneRect = new Rect(zonePos.X, zonePos.Y, zone.ActualWidth, zone.ActualHeight);
+
+                    if (zoneRect.Contains(pieceCenter))
+                    {
+                        Canvas.SetLeft(draggingPiece, zonePos.X);
+                        Canvas.SetTop(draggingPiece, zonePos.Y);
+                        break;
+                    }
+                }
+
+                draggingPiece = null;
+            }
+        }
+
+        #endregion
+
+        private void VerifyButton_Click(object sender, RoutedEventArgs e)
+        {
+            int correctCount = 0;
+
+            foreach (var piece in puzzlePieces)
+            {
+                int correctIndex = (int)piece.Tag;
+                Border targetZone = TargetGrid.Children[correctIndex] as Border;
+
+                Point zonePos = targetZone.TranslatePoint(new Point(0, 0), MainCanvas);
+                double currentX = Canvas.GetLeft(piece);
+                double currentY = Canvas.GetTop(piece);
+
+                if (Math.Abs(currentX - zonePos.X) < 10 && Math.Abs(currentY - zonePos.Y) < 10)
+                {
+                    correctCount++;
+                }
+            }
+
+            if (correctCount == 4)
+            {
+                StatusTextBlock.Text = "✓ Капча успешно пройдена!";
+                StatusTextBlock.Foreground = Brushes.Green;
+                VerifyButton.IsEnabled = false;
+
+                foreach (var piece in puzzlePieces) piece.IsEnabled = false;
+            }
+            else
+            {
+                attemptsLeft--;
+                if (attemptsLeft > 0)
+                {
+                    StatusTextBlock.Text = $"✗ Неверно собран пазл. Осталось попыток: {attemptsLeft}";
+                    StatusTextBlock.Foreground = Brushes.Red;
+                    InitializeGame();
+                }
+                else
+                {
+                    StatusTextBlock.Text = "❌ Доступ заблокирован!";
+                    StatusTextBlock.Foreground = Brushes.DarkRed;
+                    VerifyButton.IsEnabled = false;
+                    foreach (var piece in puzzlePieces) piece.IsEnabled = false;
+                }
+            }
+        }
+    }
+}
+```
