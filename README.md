@@ -1,7 +1,78 @@
 ### Помощь с БД
-####Пример создяние Таблиц для БД
+#### Пример создяние Таблиц для БД с связями
 ```
 
+-- 1. Таблица филиалов
+CREATE TABLE branches (
+    id INT IDENTITY PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    city VARCHAR(50) NOT NULL,
+    address VARCHAR(255) NOT NULL
+);
+
+-- 2. Таблица комнат (Лвл 3: Составной первичный ключ)
+CREATE TABLE rooms (
+    branch_id INT,
+    room_no INT,
+    room_type VARCHAR(50) NOT NULL, -- 'Переговорная', 'Кабинет', 'Open-space'
+    capacity INT NOT NULL,
+    price_per_hour DECIMAL(10, 2) NOT NULL,
+    
+    -- Составной ПК: номер комнаты уникален только внутри конкретного филиала
+    PRIMARY KEY (branch_id, room_no),
+    -- Связь с филиалом: если закрывается филиал, удаляются и его комнаты
+    FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE CASCADE
+);
+
+-- 3. Таблица резидентов (Лвл 4: Иерархия, таблица ссылается сама на себя)
+CREATE TABLE members (
+    id INT IDENTITY PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    phone VARCHAR(20),
+    registration_date DATE NOT NULL,
+    invited_by_id INT, -- ID резидента, который пригласил данного человека
+    
+    -- Рекурсивный внешний ключ: ссылается на id в этой же таблице.
+    -- Если пригласившего удалят, у приглашенного поле просто станет NULL.
+    FOREIGN KEY (invited_by_id) REFERENCES members(id) ON DELETE NO ACTION);
+
+-- 4. Таблица бронирований (Связь с резидентом и составная связь с комнатой)
+CREATE TABLE bookings (
+    id INT IDENTITY PRIMARY KEY,
+    member_id INT NOT NULL,
+    branch_id INT NOT NULL,
+    room_no INT NOT NULL,
+    booking_date DATE NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    
+    -- Запрещаем удалять резидента, если у него есть бронирования
+    FOREIGN KEY (member_id)
+REFERENCES members(id)
+ON DELETE NO ACTION,
+    -- Составной внешний ключ: ссылается сразу на два поля таблицы rooms!
+    FOREIGN KEY (branch_id, room_no) REFERENCES rooms(branch_id, room_no) ON DELETE CASCADE
+);
+
+-- 5. Таблица дополнительных услуг
+CREATE TABLE services (
+    id INT IDENTITY PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL
+);
+
+-- 6. Дополнительные услуги в бронировании (Связь Многие-ко-многим)
+CREATE TABLE booking_services (
+    booking_id INT,
+    service_id INT,
+    quantity INT NOT NULL DEFAULT 1,
+    
+    PRIMARY KEY (booking_id, service_id),
+    -- Каскадно удаляем услуги из бронирования, если удалено само бронирование или услуга
+    FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+    FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
+);
 ```
 
 ### Помощь с стилями
