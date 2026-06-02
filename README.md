@@ -1,11 +1,23 @@
 ### Помощь с стилями
 #### подключение БД app config
+```
 	<connectionStrings>
 		<add name="test_DB"
 			 connectionString="                   "
 			 providerName="System.Data.SqlClient"/>
 	</connectionStrings>
-потом везде в коде: readonly string connectionString = ConfigurationManager.ConnectionStrings["test_DB"].ConnectionString;
+```
+Также и установить библиотеки:
+```
+EntityFramework
+```
+```
+System.Configuration.ConfigurationManager
+```
+потом везде в коде для вызова БД: 
+```
+readonly string connectionString = ConfigurationManager.ConnectionStrings["test_DB"].ConnectionString;
+```
 #### стили
 ##### общие
 ```
